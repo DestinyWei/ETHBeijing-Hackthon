@@ -29,7 +29,16 @@ contract ERC5489 is IERC5489, ERC721Enumerable, Ownable {
 
     modifier onlySlotManager(uint256 tokenId) {
         require(_msgSender() == ownerOf(tokenId) ||
-            tokenId2AuthroizedAddresses[tokenId].contains(_msgSender()), "address should be authorized");
+            tokenId2AuthroizedAddresses[tokenId].contains(_msgSender())
+            , "address should be authorized");
+        _;
+    }
+
+    modifier onlyOwnerOrManager(uint256 tokenId) {
+        require(_msgSender() == ownerOf(tokenId) ||
+            isApprovedForAll(ownerOf(tokenId), _msgSender()) ||
+            tokenId2AuthroizedAddresses[tokenId].contains(_msgSender())
+            , "should be the token owner or be approved all");
         _;
     }
 
@@ -39,7 +48,7 @@ contract ERC5489 is IERC5489, ERC721Enumerable, Ownable {
     function setSlotUri(
         uint256 tokenId,
         string calldata value
-    ) override external onlySlotManager(tokenId) {
+    ) override external onlyOwnerOrManager(tokenId) {
         tokenId2Address2Value[tokenId][_msgSender()] = value;
 
         emit SlotUriUpdated(tokenId, _msgSender(), value);
@@ -55,7 +64,7 @@ contract ERC5489 is IERC5489, ERC721Enumerable, Ownable {
     function authorizeSlotTo(
         uint256 tokenId,
         address slotManagerAddr
-    ) override external onlyTokenOwner(tokenId) {
+    ) override external onlyOwnerOrManager(tokenId) {
         require(!tokenId2AuthroizedAddresses[tokenId].contains(slotManagerAddr), "address already authorized");
 
         _authorizeSlotTo(tokenId, slotManagerAddr);
@@ -64,14 +73,14 @@ contract ERC5489 is IERC5489, ERC721Enumerable, Ownable {
     function revokeAuthorization(
         uint256 tokenId,
         address slotManagerAddr
-    ) override external onlyTokenOwner(tokenId) {
+    ) override external onlyOwnerOrManager(tokenId) {
         tokenId2AuthroizedAddresses[tokenId].remove(slotManagerAddr);
         delete tokenId2Address2Value[tokenId][slotManagerAddr];
 
         emit SlotAuthorizationRevoked(tokenId, slotManagerAddr);
     }
 
-    function revokeAllAuthorizations(uint256 tokenId) override external onlyTokenOwner(tokenId) {
+    function revokeAllAuthorizations(uint256 tokenId) override external onlyOwnerOrManager(tokenId) {
         for (uint256 i = tokenId2AuthroizedAddresses[tokenId].length() - 1;i > 0; i--) {
             address addr = tokenId2AuthroizedAddresses[tokenId].at(i);
             tokenId2AuthroizedAddresses[tokenId].remove(addr);

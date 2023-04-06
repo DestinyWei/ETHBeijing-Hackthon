@@ -8,11 +8,6 @@ import "./interfaces/IERC5489.sol";
 contract Auction is Ownable{
 
     IERC20 public AD3;
-    IERC5489 public hNFT;
-    // 开始时间
-    uint256 public startTime;
-    // 当前的最高出价者
-    address public latestBidder;
     // latest bid successful time
     uint256 public latestBidTime;
     // tokenId => the latest successful bid price
@@ -23,24 +18,24 @@ contract Auction is Ownable{
     // this event emits when the slot on `tokenId` is bid successfully
     event BidSuccessed(address bidder, uint256 amount);
 
-    constructor(IERC20 _AD3, IERC5489 _hNFT) {
+    constructor(IERC20 _AD3) {
         AD3 = _AD3;
-        hNFT = _hNFT;
-        startTime = block.timestamp;
     }
 
     // 是否为默认价格(即0)
-    function _isDefaultBalance() private returns(bool) {
+    function _isDefaultBalance() private view returns(bool) {
         return AD3.balanceOf(address(this)) == 0;
     }
 
     // 是否超出120%
-    function _isMore120Percent(uint num1, uint num2) private returns(bool) {
+    function _isMore120Percent(uint num1, uint num2) private pure returns(bool) {
         uint result = num1 * 12 / 10;
         return num2 >= result;
     }
 
-    function bid(uint256 tokenId, uint256 fragment) public payable {
+    function bid(uint256 tokenId, address hNFTContractAddr, uint256 fragment, string memory slotUri) public payable {
+
+        IERC5489 hNFT = IERC5489(hNFTContractAddr);
         // tokenId是否存在
         require(hNFT.ownerOf(tokenId) != address(0), "hNFT doesn't exist");
         // 检查余额是否充足
@@ -49,17 +44,21 @@ contract Auction is Ownable{
         if(!_isDefaultBalance()) {
             require(_isMore120Percent(AD3.balanceOf(address(this)), fragment), "The bid is less than 120%");
             // 将上一个竞价成功者的剩余余额返还
-            AD3.transfer(latestBidder, AD3.balanceOf(address(this)));
+            AD3.transfer(tokenId2Address[tokenId], AD3.balanceOf(address(this)));
         }
 
         // 更新状态变量
-        latestBidder = _msgSender();
         latestBidTime = block.timestamp;
         tokenId2Price[tokenId] = fragment;
         tokenId2Address[tokenId] = _msgSender();
 
         // 转账
         AD3.transferFrom(_msgSender(), address(this), fragment);
+
+        // 这里不做授权,即广告主想要修改uri时需要再投钱进去
+
+        // 设置uri
+        hNFT.setSlotUri(tokenId, slotUri);
 
         // 触发Bid成功事件
         emit BidSuccessed(_msgSender(), fragment);
