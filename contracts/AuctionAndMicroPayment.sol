@@ -23,7 +23,7 @@ contract AuctionAndMicroPayment is Ownable{
     mapping(uint256 => Bid) public highestBid;
 
     // this event emits when the slot on `hNFTId` is bid successfully
-    event BidSuccessed(address bidder, uint256 amount);
+    event BidSuccessed(uint256 bidId, address bidder, uint256 amount);
     event RefundPreviousBidIncreased(uint256 bidId, uint256 hNFTId, address tokenAddress, address refunder, uint256 amount);
     event PayOutIncreased(uint256 bidId, uint256 hNFTId, address payoutAddress, uint256 amount);
 
@@ -108,7 +108,7 @@ contract AuctionAndMicroPayment is Ownable{
         hNFT.setSlotUri(hNFTId, slotUri);
 
         // 触发Bid成功事件
-        emit BidSuccessed(_msgSender(), fractionAmount);
+        emit BidSuccessed(highestBid[hNFTId].bidId, _msgSender(), fractionAmount);
     }
 
     function _payout(uint256 bidId, uint256 hNFTId, uint256 fragmentAmount, address userAddress) private {
