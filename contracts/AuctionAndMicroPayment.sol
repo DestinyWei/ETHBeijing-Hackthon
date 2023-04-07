@@ -54,10 +54,6 @@ contract AuctionAndMicroPayment is Ownable{
         }
     }
 
-    function getSlotBalance(uint256 hNFTId) public view returns(uint256) {
-        return highestBid[hNFTId].amount;
-    }
-
     // --- Private Function ---
 
     // 是否为默认价格(即0)
