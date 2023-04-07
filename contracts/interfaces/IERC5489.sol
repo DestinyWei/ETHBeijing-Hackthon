@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
-interface IERC5489 is IERC721 {
+interface IERC5489 is IERC721, IERC721Enumerable {
     /**
      * @dev this event emits when the slot on `tokenId` is authorzized to `slotManagerAddr`
      */

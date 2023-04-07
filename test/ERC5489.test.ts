@@ -6,7 +6,7 @@ describe("ERC5489", function () {
     let account1: any, account2: any, account3: any;
     let erc5489:Contract;
     let ad3:Contract;
-    let auction:Contract;
+    let auctionAndMicroPayment:Contract;
 
     beforeEach(async function () {
         [account1, account2, account3] = await ethers.getSigners();
@@ -19,9 +19,9 @@ describe("ERC5489", function () {
         ad3 = await AD3.deploy();
         await ad3.deployed();
 
-        const Auction = await ethers.getContractFactory("Auction");
-        auction = await Auction.deploy(ad3.address);
-        await auction.deployed();
+        const AuctionAndMicroPayment = await ethers.getContractFactory("AuctionAndMicroPayment");
+        auctionAndMicroPayment = await AuctionAndMicroPayment.deploy();
+        await auctionAndMicroPayment.deployed();
     })
 
     describe("Minting", () => {
@@ -33,8 +33,8 @@ describe("ERC5489", function () {
 
     describe("Approve", () => {
         it('approve function', async function () {
-            await erc5489.connect(account1).setApprovalForAll(auction.address, true);
-            expect(await erc5489.isApprovedForAll(account1.address, auction.address)).to.equal(true);
+            await erc5489.connect(account1).setApprovalForAll(auctionAndMicroPayment.address, true);
+            expect(await erc5489.isApprovedForAll(account1.address, auctionAndMicroPayment.address)).to.equal(true);
         });
     })
 })
