@@ -38,7 +38,7 @@ contract AuctionAndMicroPayment is Ownable{
     ) public payable {
 
         require(fractionAmount > 0, "Bid amount must be greater than 0.");
-        require(hNFTContractAddr != address(0) && tokenContractAddr != address(0), "The hnft and token contract can not be address(0).");
+        require(hNFTContractAddr != address(0) && tokenContractAddr != address(0), "The hNFT and token contract can not be address(0).");
 
         _bid(hNFTId, hNFTContractAddr, tokenContractAddr, fractionAmount, slotUri);
 
@@ -83,7 +83,7 @@ contract AuctionAndMicroPayment is Ownable{
         token = IERC20(tokenContractAddr);
 
         // hNFTId是否存在
-        require(hNFT.totalSupply() >= hNFTId, "hNFTFT doesn't exist");
+        require(hNFT.totalSupply() >= hNFTId, "hNFT doesn't exist");
         // 检查余额是否充足
         require(token.balanceOf(_msgSender()) >= fractionAmount, "balance not enough");
         // 检查授权额度是否充足
