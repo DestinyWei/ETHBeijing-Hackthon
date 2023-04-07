@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IERC5489.sol";
 
 contract AuctionAndMicroPayment is Ownable{
+    using SafeMath for uint256;
 
     struct Bid {
+        uint256 bidId;
         uint256 amount; // 余额
         address bidder;
         address tokenContract;
@@ -21,8 +24,8 @@ contract AuctionAndMicroPayment is Ownable{
 
     // this event emits when the slot on `hNFTId` is bid successfully
     event BidSuccessed(address bidder, uint256 amount);
-    event RefundPreviousBidIncreased(uint256 hNFTId, address tokenAddress, address refunder, uint256 amount);
-    event PayOutIncreased(uint256 hNFTId, address payoutAddress, uint256 amount);
+    event RefundPreviousBidIncreased(uint256 bidId, uint256 hNFTId, address tokenAddress, address refunder, uint256 amount);
+    event PayOutIncreased(uint256 bidId, uint256 hNFTId, address payoutAddress, uint256 amount);
 
     constructor() {}
 
@@ -39,6 +42,20 @@ contract AuctionAndMicroPayment is Ownable{
 
         _bid(hNFTId, hNFTContractAddr, tokenContractAddr, fractionAmount, slotUri);
 
+    }
+
+    function payout(uint256 bidId, uint256 hNFTId, uint256 fragmentAmount) public {
+        _payout(bidId, hNFTId, fragmentAmount, _msgSender());
+    }
+
+    function batchPayout(uint256 bidId, uint256 hNFTId, uint256[] memory fragmentAmounts, address[] memory userAddresses) public {
+        for (uint i = 0; i < userAddresses.length; i++) {
+            _payout(bidId, hNFTId, fragmentAmounts[i], userAddresses[i]);
+        }
+    }
+
+    function getSlotBalance(uint256 hNFTId) public view returns(uint256) {
+        return highestBid[hNFTId].amount;
     }
 
     // --- Private Function ---
@@ -78,11 +95,11 @@ contract AuctionAndMicroPayment is Ownable{
             require(_isMore120Percent(previousBidder.amount, fractionAmount), "The bid is less than 120%");
             // 将上一个竞价成功者的剩余余额返还
             token.transfer(previousBidder.bidder, previousBidder.amount);
-            emit RefundPreviousBidIncreased(hNFTId, previousBidder.tokenContract, previousBidder.bidder, previousBidder.amount);
+            emit RefundPreviousBidIncreased(previousBidder.bidId, hNFTId, previousBidder.tokenContract, previousBidder.bidder, previousBidder.amount);
         }
 
         // 更新状态变量
-        highestBid[hNFTId] = Bid(fractionAmount, _msgSender(), tokenContractAddr, slotUri);
+        highestBid[hNFTId] = Bid(_generateRandomNumber(), fractionAmount, _msgSender(), tokenContractAddr, slotUri);
 
         // 转账
         token.transferFrom(_msgSender(), address(this), fractionAmount);
@@ -94,7 +111,23 @@ contract AuctionAndMicroPayment is Ownable{
         emit BidSuccessed(_msgSender(), fractionAmount);
     }
 
-    function payout(uint256 hNFTId, address userAddresses, uint256 fragmentAmounts) public {
+    function _payout(uint256 bidId, uint256 hNFTId, uint256 fragmentAmount, address userAddress) private {
+        Bid memory payOutBid = highestBid[hNFTId];
+        require(payOutBid.bidId == bidId, "The bidId is not match.");
+        require(fragmentAmount <= payOutBid.amount, "The advertising sponsor is credit balance is insufficient.");
 
+        payOutBid.amount = payOutBid.amount.sub(fragmentAmount);
+        token = IERC20(payOutBid.tokenContract);
+        highestBid[hNFTId] = payOutBid;
+        token.transfer(userAddress, fragmentAmount);
+
+        emit PayOutIncreased(payOutBid.bidId, hNFTId, userAddress, fragmentAmount);
+    }
+
+    function _generateRandomNumber() private view returns (uint256) {
+        bytes32 blockHash = blockhash(block.number);
+        bytes memory concatData = abi.encodePacked(blockHash, block.timestamp, block.coinbase);
+        bytes32 hash = keccak256(concatData);
+        return uint256(hash);
     }
 }
