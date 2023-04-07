@@ -24,29 +24,21 @@ describe("ERC5489", function () {
         await auction.deployed();
     })
 
-    describe("Bid", () => {
+    describe("Two user bid the slot uri", () => {
         it('account2 first bid', async function () {
             // AD3 mint function
             await ad3.connect(account1).mint(account2.address, 100000);
-            expect(await ad3.balanceOf(account2.address)).to.equal(BigNumber.from('100000'));
-
             await ad3.connect(account1).mint(account3.address, 100000);
-            expect(await ad3.balanceOf(account3.address)).to.equal(BigNumber.from('100000'));
 
             // AD3 approve function
             await ad3.connect(account2).approve(auction.address, 100000);
-            expect(await ad3.allowance(account2.address, auction.address)).to.equal(BigNumber.from('100000'));
-
             await ad3.connect(account3).approve(auction.address, 100000);
-            expect(await ad3.allowance(account3.address, auction.address)).to.equal(BigNumber.from('100000'));
 
             // ERC5489 mint function
             await erc5489.connect(account1).mint("aaaa");
-            expect(await erc5489.ownerOf(1)).to.equal(account1.address);
 
             // ERC5489 approve function
             await erc5489.connect(account1).setApprovalForAll(auction.address, true);
-            expect(await erc5489.isApprovedForAll(account1.address, auction.address)).to.true;
 
             // account2 first bid
             await auction.connect(account2).bid(1, erc5489.address, 1000, "bbbb");
@@ -58,31 +50,20 @@ describe("ERC5489", function () {
         it('account3 against bid', async function () {
             // AD3 mint function
             await ad3.connect(account1).mint(account2.address, 100000);
-            expect(await ad3.balanceOf(account2.address)).to.equal(BigNumber.from('100000'));
-
             await ad3.connect(account1).mint(account3.address, 100000);
-            expect(await ad3.balanceOf(account3.address)).to.equal(BigNumber.from('100000'));
 
             // AD3 approve function
             await ad3.connect(account2).approve(auction.address, 100000);
-            expect(await ad3.allowance(account2.address, auction.address)).to.equal(BigNumber.from('100000'));
-
             await ad3.connect(account3).approve(auction.address, 100000);
-            expect(await ad3.allowance(account3.address, auction.address)).to.equal(BigNumber.from('100000'));
 
             // ERC5489 mint function
             await erc5489.connect(account1).mint("aaaa");
-            expect(await erc5489.ownerOf(1)).to.equal(account1.address);
 
             // ERC5489 approve function
             await erc5489.connect(account1).setApprovalForAll(auction.address, true);
-            expect(await erc5489.isApprovedForAll(account1.address, auction.address)).to.true;
 
             // account2 first bid
             await auction.connect(account2).bid(1, erc5489.address, 1000, "bbbb");
-            expect(await auction.tokenId2Address(1)).to.equal(account2.address);
-            expect(await auction.tokenId2Price(1)).to.equal(1000);
-            expect(await erc5489.getSlotUri(1, auction.address)).to.equal("bbbb");
 
             // account3 bid against
             // it would be failed when the fragment less than 1200

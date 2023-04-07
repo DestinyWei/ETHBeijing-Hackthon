@@ -8,8 +8,6 @@ import "./interfaces/IERC5489.sol";
 contract Auction is Ownable{
 
     IERC20 public AD3;
-    // latest bid successful time
-    uint256 public latestBidTime;
     // tokenId => the latest successful bid price
     mapping(uint256 => uint256) public tokenId2Price;
     // tokenId => the latest slot manager
@@ -33,27 +31,28 @@ contract Auction is Ownable{
         return num2 >= result;
     }
 
-    function bid(uint256 tokenId, address hNFTContractAddr, uint256 fragment, string memory slotUri) public payable {
+    function bid(uint256 tokenId, address hNFTContractAddr, uint256 fractionAmount, string memory slotUri) public payable {
 
         IERC5489 hNFT = IERC5489(hNFTContractAddr);
         // tokenId是否存在
-        require(hNFT.ownerOf(tokenId) != address(0), "hNFT doesn't exist");
+        require(hNFT.totalSupply() >= tokenId, "hNFT doesn't exist");
         // 检查余额是否充足
-        require(AD3.balanceOf(_msgSender()) >= fragment, "balance not enough");
+        require(AD3.balanceOf(_msgSender()) >= fractionAmount, "balance not enough");
+        // 检查授权额度是否充足
+        require(AD3.allowance(_msgSender()) >= fractionAmount, "allowance not enough");
         // 不为默认价格时检查是否大于120%
         if(!_isDefaultBalance()) {
-            require(_isMore120Percent(AD3.balanceOf(address(this)), fragment), "The bid is less than 120%");
+            require(_isMore120Percent(AD3.balanceOf(address(this)), fractionAmount), "The bid is less than 120%");
             // 将上一个竞价成功者的剩余余额返还
             AD3.transfer(tokenId2Address[tokenId], AD3.balanceOf(address(this)));
         }
 
         // 更新状态变量
-        latestBidTime = block.timestamp;
-        tokenId2Price[tokenId] = fragment;
+        tokenId2Price[tokenId] = fractionAmount;
         tokenId2Address[tokenId] = _msgSender();
 
         // 转账
-        AD3.transferFrom(_msgSender(), address(this), fragment);
+        AD3.transferFrom(_msgSender(), address(this), fractionAmount);
 
         // 这里不做授权,即广告主想要修改uri时需要再投钱进去
 
@@ -61,10 +60,6 @@ contract Auction is Ownable{
         hNFT.setSlotUri(tokenId, slotUri);
 
         // 触发Bid成功事件
-        emit BidSuccessed(_msgSender(), fragment);
+        emit BidSuccessed(_msgSender(), fractionAmount);
     }
-
-    // 广告主取消投放广告
-    // function withdraw() public onlyOwner {
-    // }
 }
