@@ -66,7 +66,7 @@ contract AuctionAndMicroPayment is Ownable{
     }
 
     // 是否超出120%
-    function _isMore120Percent(uint num1, uint num2) internal pure returns(bool) {
+    function _isMore120Percent(uint num1, uint num2) private pure returns(bool) {
         uint result = num1 * 12 / 10;
         return num2 >= result;
     }
@@ -77,7 +77,7 @@ contract AuctionAndMicroPayment is Ownable{
         address tokenContractAddr,
         uint256 fractionAmount,
         string memory slotUri
-    ) internal {
+    ) private {
 
         hNFT = IERC5489(hNFTContractAddr);
         token = IERC20(tokenContractAddr);
